@@ -11,20 +11,21 @@ class Eastmoney():
     def __init__(self, id, name):
         self.id = id
         self.name = name
-        self.time, self.money_7, self.money = self.get_percentage()
+        self.time, self.money_7, self.money = self.get_data()
 
     @staticmethod
-    def getabstrs(a, b, strs):  # a|str|b
+    def cut_text(a, b, text):  # a|text|b
         if a == '':
-            return strs[:strs.find(b)]
+            return text[:text.find(b)]
         elif b == '':
-            return strs[strs.find(a) + len(a):]
+            return text[text.find(a) + len(a):]
         else:
-            strs = strs[strs.find(a) + len(a):]
-            return strs[:strs.find(b)]
+            text = text[text.find(a) + len(a):]
+            return text[:text.find(b)]
 
     @staticmethod
-    def gethtml(url, headers):
+    def get_html(url, headers):
+        # print('request...\n')
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req) as response:
             return response.read().decode('utf-8')
@@ -43,45 +44,49 @@ class Eastmoney():
     def main_url(self):
         return 'http://fund.eastmoney.com/%s.html' % self.id
 
-    def get_percentage(self):
-        html = self.gethtml(self.main_url(), self.headers(
+    def get_data(self):
+        html = self.get_html(self.main_url(), self.headers(
             referer='http://fund.eastmoney.com/'))
         # 记录时间 #七日年化 #万份收益
-        return self.getabstrs('class="fix_date">', '<', html), \
-            self.getabstrs('ui-font-middle ui-color-red ui-num">', '%<', html), \
-            self.getabstrs('class="fix_dwjz  bold ui-color-red">', '<', html)
+        return self.cut_text('class="fix_date">', '<', html), \
+            self.cut_text('ui-font-middle ui-color-red ui-num">', '%<', html), \
+            self.cut_text('class="fix_dwjz  bold ui-color-red">', '<', html)
 
 
 def mail_is_ok(my_sender, my_pass, to_users, my_message):
     try:
         msg = MIMEText(my_message, 'plain', 'utf-8')
-        # 括号里的对应发件人邮箱昵称、发件人邮箱账号
+        # 发件人邮箱昵称、邮箱账号
         msg['From'] = formataddr(['noreply', 'noreply@mail.com'])
-        # 括号里的对应收件人邮箱昵称、收件人邮箱账号
+        # 收件人邮箱昵称、邮箱账号
         msg['To'] = formataddr(['someone', 'someone@mail.com'])
-        msg['Subject'] = "基金七日年化报告"  # 邮件的主题，也可以说是标题
-        # 发件人邮箱中的SMTP服务器及其端口
-        server = smtplib.SMTP_SSL("smtp.qq.com", 465)
-        server.login(my_sender, my_pass)  # 括号中对应的是发件人邮箱账号、邮箱密码
-        # 括号中对应的是发件人邮箱账号、收件人邮箱账号、发送邮件
+        # 邮件标题
+        msg['Subject'] = '基金七日年化报告'
+        # 发件人邮箱的SMTP服务器及其端口
+        server = smtplib.SMTP_SSL('smtp.qq.com', 465)
+        # 发件人邮箱账号、邮箱密码
+        server.login(my_sender, my_pass)
+        # 发件人邮箱账号、收件人邮箱账号、发送邮件内容
         server.sendmail(my_sender, to_users, msg.as_string())
-        server.quit()  # 关闭连接
+        # 关闭连接
+        server.quit()
     except Exception:
         return False
     return True
 
 
-def eastmoneySort(data):
-    eastmoney = [Eastmoney(id, name) for (id, name) in data]
-    eastmoney.sort(key=lambda x: x.money_7, reverse=True)  # 由大到小,降序输出
+def eastmoney_sort(data_list):
+    eastmoney_list = [Eastmoney(id, name) for (id, name) in data_list]
+    eastmoney_list.sort(key=lambda x: x.money_7, reverse=True)  # 由大到小,降序输出
     # for element in eastmoney:
-    #    print(element.name,":",element.money_7)
-    return eastmoney
+    #    print(element.name, ':', element.money_7)
+    return eastmoney_list
 
 
-def is_change(new_id_list):  # 优化为ini配置文件
+# 全等判定
+def is_change(new_id_list):
     if os.access('eastmoney.ini', os.F_OK):
-        with open('eastmoney.ini', "r", encoding="utf-8") as f:
+        with open('eastmoney.ini', 'r', encoding='utf-8') as f:
             old_id_list = f.read()
             if old_id_list == new_id_list:
                 return False
@@ -102,13 +107,13 @@ def main():
         ('000397', '腾讯(腾讯腾安)-汇添富全额宝货币'),
         #('003536', '腾讯(腾讯腾安)-浦银安盛日日丰货币D'),
     ]
-    data_list = eastmoneySort(data)
+    data_list = eastmoney_sort(data)
     new_id_list = ''
     for x in data_list:
         new_id_list += x.id
     if is_change(new_id_list):
-        print('Need Change!!!')
-        with open('eastmoney.ini', "w", encoding="utf-8") as f:
+        print('Need Change !!!')
+        with open('eastmoney.ini', 'w', encoding='utf-8') as f:
             f.write(new_id_list)
         i = 0
         massage = '现在基金七日年化收益率排列出现变化！！！'
@@ -117,12 +122,12 @@ def main():
             massage += '\n\n第%d为:\n%s%s\n|七日年化:%s%s||万份收益:%s|' % (
                 i, x.name, x.time, x.money_7, '%', x.money)
         print(massage)
-        if mail_is_ok('***@qq.com', '***', ['***@qq.com'], massage):
-            print("邮件发送成功!!!")
+        if mail_is_ok('***@qq.com', '***', ['***@***.com'], massage):
+            print('邮件发送成功!!!')
         else:
-            print("邮件发送失败???")
+            print('邮件发送失败???')
     else:
-        print('All Ok!!!')
+        print('All Ok !!!')
 
 
 if __name__ == '__main__':
