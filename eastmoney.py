@@ -47,7 +47,7 @@ class Eastmoney():
     def get_data(self):
         html = self.get_html(self.main_url(), self.headers(
             referer='http://fund.eastmoney.com/'))
-        # 记录时间 #七日年化 #万份收益
+        # 记录时间-七日年化-万份收益
         return self.cut_text('class="fix_date">', '<', html), \
             self.cut_text('ui-font-middle ui-color-red ui-num">', '%<', html), \
             self.cut_text('class="fix_dwjz  bold ui-color-red">', '<', html)
