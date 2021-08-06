@@ -116,13 +116,13 @@ def main():
         with open('eastmoney.ini', 'w', encoding='utf-8') as f:
             f.write(new_id_list)
         i = 0
-        massage = '现在基金七日年化收益率排列出现变化！！！'
+        message = '现在基金七日年化收益率排列出现变化！！！'
         for x in data_list:
             i += 1
-            massage += '\n\n第%d为:\n%s%s\n|七日年化:%s%s||万份收益:%s|' % (
+            message += '\n\n第%d为:\n%s%s\n|七日年化:%s%s||万份收益:%s|' % (
                 i, x.name, x.time, x.money_7, '%', x.money)
-        print(massage)
-        if mail_is_ok('***@qq.com', '***', ['***@***.com'], massage):
+        print(message)
+        if mail_is_ok('***@qq.com', '***', ['***@***.com'], message):
             print('邮件发送成功!!!')
         else:
             print('邮件发送失败???')
